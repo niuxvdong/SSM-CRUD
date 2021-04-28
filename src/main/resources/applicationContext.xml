@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/aop https://www.springframework.org/schema/aop/spring-aop.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+    <!--Spring配置文件-->
+    <!--
+    核心点：
+        1. 数据源
+        2. 整合mybatis
+        3. 事务控制
+    -->
+
+    <!--配置分容器处理-->
+    <context:component-scan base-package="com.itnxd">
+        <!--除了Controller都要-->
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
+
+    <!--0. 导入外部配置文件-->
+    <context:property-placeholder location="classpath:dbconfig.properties"/>
+    <!--1. 配数据源-->
+    <bean id="ds" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+        <property name="user" value="${jdbc.user}"/>
+        <property name="password" value="${jdbc.password}"/>
+        <property name="jdbcUrl" value="${jdbc.jdbcUrl}"/>
+        <property name="driverClass" value="${jdbc.driverClass}"/>
+
+        <property name="maxPoolSize" value="${jdbc.maxPoolSize}"/>
+        <property name="minPoolSize" value="${jdbc.minPoolSize}"/>
+    </bean>
+
+    <!--2. 配置JdbcTemplate操作数据库。pass-->
+    <!--3. 配置使用mybatis操作数据库-->
+    <!--可以根据配置文件得到sqlSessionFactory-->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <!--指定mybatis配置文件路径-->
+        <property name="configLocation" value="classpath:mybatis-config.xml"/>
+        <!--指定用的数据源（即连接池）-->
+        <property name="dataSource" ref="ds"/>
+        <!--指定xml映射文件的位置-->
+        <property name="mapperLocations" value="classpath:mapper/*.xml"/>
+    </bean>
+
+    <!--配置扫描器，我们要把每一个dao接口的实现加入到ioc容器-->
+    <bean id="mapperScannerConfigurer" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <!--指定dao接口所在包-->
+        <property name="basePackage" value="com.itnxd.dao"/>
+    </bean>
+
+    <!--配置可以执行批量语句的sqlSession-->
+    <bean id="sqlSessionTemplate" class="org.mybatis.spring.SqlSessionTemplate">
+        <!--指定构造器参数值-->
+        <constructor-arg name="sqlSessionFactory" ref="sqlSessionFactory"/>
+        <constructor-arg name="executorType" value="BATCH"/>
+    </bean>
+
+    <!--4. 配置事务控制-->
+    <!--配置事务控制器，控制数据源的关闭和提交-->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <!--控制数据源-->
+        <property name="dataSource" ref="ds"/>
+    </bean>
+
+    <!--开启基于注解的事务，使用xml配置形式的事务（必要主要的都是使用配置式)-->
+    <!--5. 基于xml配置事务-->
+    <aop:config>
+        <!--配置切入点表达式-->
+        <aop:pointcut id="txPoint" expression="execution(* com.itnxd.service.*.*(..))"/>
+        <!--配置事务增强-->
+        <aop:advisor advice-ref="myTx" pointcut-ref="txPoint"/>
+    </aop:config>
+
+    <!--6. 配置事务增强，事务属性
+    transaction-manager= "tm":指定要配置的事务管理器的id
+    -->
+    <tx:advice id="myTx" transaction-manager="transactionManager">
+        <!--配置事务属性-->
+        <tx:attributes>
+            <!--任何方法出现任何异常都回滚-->
+            <tx:method name="*" rollback-for="java.lang.Exception"/>
+            <!--get方法只读-->
+            <tx:method name="get*" read-only="true"/>
+            <!--配置插入方法隔离级别-->
+            <!--<tx:method name="insert*" isolation="READ_UNCOMMITTED"/>-->
+        </tx:attributes>
+    </tx:advice>
+
+</beans>

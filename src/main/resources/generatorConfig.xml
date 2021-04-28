@@ -1,0 +1,48 @@
+<!DOCTYPE generatorConfiguration PUBLIC
+        "-//mybatis.org//DTD MyBatis Generator Configuration 1.0//EN"
+        "http://mybatis.org/dtd/mybatis-generator-config_1_0.dtd">
+<generatorConfiguration>
+
+    <!--targetRuntime可指定生成级别，复杂sql或是简单sql
+    http://mybatis.org/generator/configreference/context.html
+    -->
+    <context id="simple" targetRuntime="MyBatis3">
+
+        <!--指定生成代码不要加注释！-->
+        <commentGenerator>
+            <property name="suppressAllComments" value="true" />
+        </commentGenerator>
+
+        <!--指定连接的数据库信息-->
+        <jdbcConnection
+                driverClass="com.mysql.cj.jdbc.Driver"
+                connectionURL="jdbc:mysql:///mybatis"
+                password="n158903258"
+                userId="root"
+        />
+
+        <!--
+        生成JavaBean：
+        targetPackage：JavaBean的存放包的路径
+        targetProject：项目路径（包路径）
+        -->
+        <javaModelGenerator targetPackage="com.itnxd.bean" targetProject="./src/main/java"/>
+
+        <!--
+        sql映射文件生成器，指定xml文件生成位置
+        -->
+        <sqlMapGenerator targetPackage="mapper" targetProject="src/main/resources"/>
+
+        <!--Dao接口生成器-->
+        <javaClientGenerator type="XMLMAPPER" targetPackage="com.itnxd.dao" targetProject="src/main/java"/>
+
+        <!--
+        指定要生成的sql表
+
+        tableName：指定要生成的表
+        domainObjectName：这个表对应的JavaBean类
+        -->
+        <table tableName="t_dept" domainObjectName="Department"/>
+        <table tableName="t_emp" domainObjectName="Employee"/>
+    </context>
+</generatorConfiguration>
